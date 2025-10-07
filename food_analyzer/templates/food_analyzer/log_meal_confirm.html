@@ -1,112 +1,134 @@
 {% extends 'food_analyzer/base.html' %}
 {% block content %}
-<div class="max-w-2xl mx-auto mt-10">
+<div class="max-w-3xl mx-auto mt-10">
     <div class="bg-white p-8 rounded-lg shadow-lg">
-        
-        {% if nutrition %}
-        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Is this correct?</h2>
+
+        {% if aggregated_nutrition and aggregated_nutrition.items %}
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Confirm & Edit Your Meal</h2>
+        <p class="text-center text-gray-500 mb-6">Our AI detected the items below. Please correct any names or quantities before logging.</p>
 
         <form method="post">
             {% csrf_token %}
 
-            <div class="text-center mb-6">
-                <p class="text-lg">Our AI thinks this is:</p>
-                <input type="text" id="food-name-input" name="food_name" value="{{ nutrition.name }}" class="mt-2 text-center text-xl font-bold text-emerald-600 border border-gray-300 rounded-md p-2 w-full max-w-sm mx-auto">
+            <div id="food-items-container" class="space-y-4">
+                {% for item in aggregated_nutrition.items %}
+                <div class="item-row grid grid-cols-12 gap-4 items-center p-3 bg-gray-50 rounded-lg">
+                    <div class="col-span-3 md:col-span-2">
+                        <label for="quantity_{{ forloop.counter0 }}" class="text-xs text-gray-500">Qty</label>
+                        <input type="number" name="quantity_{{ forloop.counter0 }}" value="{{ item.quantity }}" class="item-quantity mt-1 text-center font-semibold border border-gray-300 rounded-md p-2 w-full">
+                    </div>
+                    <div class="col-span-9 md:col-span-10">
+                        <label for="food_name_{{ forloop.counter0 }}" class="text-xs text-gray-500">Food Name</label>
+                        <input type="text" name="food_name_{{ forloop.counter0 }}" value="{{ item.name }}" class="item-name mt-1 text-lg font-bold text-emerald-600 border border-gray-300 rounded-md p-2 w-full">
+                    </div>
+                </div>
+                {% endfor %}
             </div>
             
-            <div id="nutrition-facts-container" class="my-6 p-4 bg-gray-100 rounded-lg">
-                <h3 class="font-bold text-lg text-center">Nutrition Facts</h3>
-                <p id="serving-text" class="text-gray-600 text-center">(Per {{ nutrition.serving_qty }} {{ nutrition.serving_unit }})</p>
+            <input type="hidden" name="item_count" value="{{ aggregated_nutrition.items|length }}">
+
+            <div id="nutrition-facts-container" class="my-8 p-4 bg-gray-100 rounded-lg">
+                <h3 class="font-bold text-lg text-center">Estimated Grand Totals</h3>
+                <div id="loader" class="text-center text-gray-500 hidden">Recalculating...</div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-center">
                     <div>
-                        <p id="calories-display" class="font-bold text-xl">{{ nutrition.calories|floatformat:0 }}</p>
+                        <p id="total-calories-display" class="font-bold text-xl">{{ aggregated_nutrition.totals.calories|floatformat:0 }}</p>
                         <p class="text-sm text-gray-500">Calories</p>
                     </div>
                     <div>
-                        <p id="protein-display" class="font-bold text-xl">{{ nutrition.protein_g|floatformat:0 }}g</p>
+                        <p id="total-protein-display" class="font-bold text-xl">{{ aggregated_nutrition.totals.protein_g|floatformat:0 }}g</p>
                         <p class="text-sm text-gray-500">Protein</p>
                     </div>
                     <div>
-                        <p id="carbs-display" class="font-bold text-xl">{{ nutrition.carbs_g|floatformat:0 }}g</p>
+                        <p id="total-carbs-display" class="font-bold text-xl">{{ aggregated_nutrition.totals.carbs_g|floatformat:0 }}g</p>
                         <p class="text-sm text-gray-500">Carbs</p>
                     </div>
                     <div>
-                        <p id="fat-display" class="font-bold text-xl">{{ nutrition.fat_g|floatformat:0 }}g</p>
+                        <p id="total-fat-display" class="font-bold text-xl">{{ aggregated_nutrition.totals.fat_g|floatformat:0 }}g</p>
                         <p class="text-sm text-gray-500">Fat</p>
                     </div>
                 </div>
             </div>
-
-            <div class="mt-6 flex justify-center space-x-4">
-                <button type="submit" class="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">Log this Meal</button>
+            <div class="mt-8 flex justify-center space-x-4">
+                <button type="submit" class="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">Log Corrected Meal</button>
                 <a href="{% url 'log_meal' %}" class="px-8 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</a>
             </div>
         </form>
 
         {% else %}
-            {% endif %}
-
+            <div class="text-center">
+                <p class="text-red-500 font-semibold text-lg">Sorry, we couldn't detect any food items.</p>
+                <a href="{% url 'log_meal' %}" class="mt-6 inline-block px-8 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Try Again</a>
+            </div>
+        {% endif %}
     </div>
 </div>
 
 <script>
-    const foodInput = document.getElementById('food-name-input');
-    const caloriesDisplay = document.getElementById('calories-display');
-    const proteinDisplay = document.getElementById('protein-display');
-    const carbsDisplay = document.getElementById('carbs-display');
-    const fatDisplay = document.getElementById('fat-display');
-    const servingText = document.getElementById('serving-text');
-    const nutritionContainer = document.getElementById('nutrition-facts-container');
+    const itemsContainer = document.getElementById('food-items-container');
+    const caloriesDisplay = document.getElementById('total-calories-display');
+    const proteinDisplay = document.getElementById('total-protein-display');
+    const carbsDisplay = document.getElementById('total-carbs-display');
+    const fatDisplay = document.getElementById('total-fat-display');
+    const loader = document.getElementById('loader');
 
     let debounceTimer;
 
-    // This function runs when the user types in the box
-    foodInput.addEventListener('input', () => {
-        // Clear the previous timer
+    // Listen for changes on any of the input fields within the container
+    itemsContainer.addEventListener('input', () => {
         clearTimeout(debounceTimer);
-        
-        // Set a new timer to run after 500ms
-        // This stops us from sending a request on every single keystroke
-        debounceTimer = setTimeout(() => {
-            const foodName = foodInput.value;
-            if (foodName) {
-                updateNutrition(foodName);
-            }
-        }, 500); // 500ms delay
+        debounceTimer = setTimeout(recalculateTotals, 750); // Wait 750ms after user stops typing
     });
 
-    // This function fetches the new data from our Django API
-    async function updateNutrition(foodName) {
-        nutritionContainer.style.opacity = '0.5'; // Visually show that we're loading
+    // This function is now much smarter and does the math in the browser
+    async function recalculateTotals() {
+        loader.classList.remove('hidden'); // Show "Recalculating..."
         
-        try {
-            // Call the new API endpoint we created
-            const response = await fetch(`{% url 'api_get_nutrition' %}?food=${encodeURIComponent(foodName)}`);
-            
-            if (!response.ok) {
-                throw new Error('Nutrition data not found');
-            }
-            
-            const data = await response.json();
-            
-            // Update the HTML with the new data from the server
-            caloriesDisplay.textContent = Math.round(data.calories);
-            proteinDisplay.textContent = `${Math.round(data.protein_g)}g`;
-            carbsDisplay.textContent = `${Math.round(data.carbs_g)}g`;
-            fatDisplay.textContent = `${Math.round(data.fat_g)}g`;
-            servingText.textContent = `(Per ${data.serving_qty} ${data.serving_unit})`;
+        const itemRows = itemsContainer.querySelectorAll('.item-row');
+        const fetchPromises = [];
 
-        } catch (error) {
-            console.error('Failed to fetch nutrition data:', error);
-            // If there's an error (e.g., food not found), show 'N/A'
-            caloriesDisplay.textContent = 'N/A';
-            proteinDisplay.textContent = 'N/A';
-            carbsDisplay.textContent = 'N/A';
-            fatDisplay.textContent = 'N/A';
-            servingText.textContent = `(Could not find data for "${foodName}")`;
-        } finally {
-            nutritionContainer.style.opacity = '1'; // Restore full opacity
-        }
+        // For each item row, create a request to get its BASE nutrition data (for a single serving)
+        itemRows.forEach(row => {
+            const name = row.querySelector('.item-name').value;
+            
+            if (name) {
+                // The query now ONLY includes the name, not the quantity
+                const promise = fetch(`{% url 'api_get_nutrition' %}?food=${encodeURIComponent(name)}`)
+                    .then(response => response.ok ? response.json() : null);
+                fetchPromises.push(promise);
+            }
+        });
+
+        // Wait for all the API calls for single servings to complete
+        const baseNutritionResults = await Promise.all(fetchPromises);
+
+        // Reset totals
+        let totalCalories = 0;
+        let totalProtein = 0;
+        let totalCarbs = 0;
+        let totalFat = 0;
+
+        // Now, loop through the rows again to do the multiplication
+        itemRows.forEach((row, index) => {
+            const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+            const baseNutrition = baseNutritionResults[index];
+            
+            if (quantity > 0 && baseNutrition) {
+                // Multiply the single-serving nutrition by the quantity
+                totalCalories += (baseNutrition.calories || 0) * quantity;
+                totalProtein += (baseNutrition.protein_g || 0) * quantity;
+                totalCarbs += (baseNutrition.carbs_g || 0) * quantity;
+                totalFat += (baseNutrition.fat_g || 0) * quantity;
+            }
+        });
+
+        // Update the display with the new, correctly calculated grand totals
+        caloriesDisplay.textContent = Math.round(totalCalories);
+        proteinDisplay.textContent = `${Math.round(totalProtein)}g`;
+        carbsDisplay.textContent = `${Math.round(totalCarbs)}g`;
+        fatDisplay.textContent = `${Math.round(totalFat)}g`;
+        
+        loader.classList.add('hidden'); // Hide "Recalculating..."
     }
 </script>
 {% endblock %}

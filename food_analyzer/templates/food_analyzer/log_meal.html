@@ -3,12 +3,21 @@
 <div class="max-w-xl mx-auto mt-10">
     <div class="bg-white p-8 rounded-lg shadow-lg text-center">
         <h2 class="text-2xl font-bold text-gray-800 mb-2">Log a Meal with AI</h2>
-        <p class="text-gray-500 mb-6">Upload a photo of a single food item, and we'll identify it and log its nutrition for you.</p>
+        <p class="text-gray-500 mb-6">Upload a photo of your meal. Our AI will identify the items and log the nutrition for you.</p>
+        
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.as_p }}
             <button type="submit" class="w-full mt-4 bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 font-semibold">Analyze Image</button>
         </form>
+
+        {% if error %}
+            <div class="mt-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md text-left">
+                <strong class="font-bold">An error occurred:</strong>
+                <span class="block sm:inline">{{ error }}</span>
+            </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}

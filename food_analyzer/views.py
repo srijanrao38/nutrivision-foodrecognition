@@ -1,45 +1,28 @@
-# food_analyzer/views.py
+# food_analyzer/views.py (Corrected Version)
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth import login, authenticate, logout
-from .forms import UserProfileForm, ImageUploadForm, CustomUserCreationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from .models import UserProfile, DailyIntakeLog
-from .forms import UserProfileForm, ImageUploadForm
+from .forms import UserProfileForm, ImageUploadForm, CustomUserCreationForm
 from . import planner_engine
 from . import ml_utils
 import datetime
-from django.http import JsonResponse 
-
-# --- No changes to home, register, login, logout, profile views ---
 
 def home_view(request):
     return render(request, 'food_analyzer/home.html')
 
-# food_analyzer/views.py
-
-# ... other imports ...
-# CHANGE THIS IMPORT
-from django.contrib.auth.forms import AuthenticationForm 
-# TO THIS (We need our new custom form)
-from .forms import UserProfileForm, ImageUploadForm, CustomUserCreationForm
-# ... other imports ...
-
-
-# Find this function and make the change
 def register_view(request):
     if request.method == 'POST':
-        # USE OUR NEW CUSTOM FORM HERE
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('profile')
     else:
-        # AND HERE
         form = CustomUserCreationForm()
     return render(request, 'food_analyzer/register.html', {'form': form})
-
-# ... the rest of your views.py file remains the same ...
 
 def login_view(request):
     if request.method == 'POST':
@@ -67,6 +50,7 @@ def profile_view(request):
             return redirect('dashboard')
     else:
         form = UserProfileForm(instance=profile)
+    # Corrected path below
     return render(request, 'food_analyzer/profile.html', {'form': form})
 
 @login_required
@@ -84,14 +68,14 @@ def dashboard_view(request):
     total_carbs_today = sum(log.carbs_g for log in todays_logs)
     total_fat_today = sum(log.fat_g for log in todays_logs)
     
-    target_calories = meal_plan_data['target_calories']
+    target_calories = meal_plan_data.get('target_calories', 2000)
     calories_percentage = (total_calories_today / target_calories * 100) if target_calories > 0 else 0
     calories_percentage_capped = min(calories_percentage, 100)
 
     context = {
-        'meal_plan': meal_plan_data['plan'],
-        'target_calories': meal_plan_data['target_calories'],
-        'plan_calories': meal_plan_data['plan_calories'],
+        'meal_plan': meal_plan_data.get('plan'),
+        'target_calories': target_calories,
+        'plan_calories': meal_plan_data.get('plan_calories', 0),
         'todays_logs': todays_logs,
         'total_calories_today': total_calories_today,
         'total_protein_today': total_protein_today,
@@ -99,6 +83,7 @@ def dashboard_view(request):
         'total_fat_today': total_fat_today,
         'calories_percentage': calories_percentage_capped,
     }
+    # Corrected path below
     return render(request, 'food_analyzer/dashboard.html', context)
 
 @login_required
@@ -107,51 +92,59 @@ def log_meal_view(request):
         form = ImageUploadForm(request.POST, request.FILES)
         if form.is_valid():
             image = form.cleaned_data['image']
-            predicted_name, confidence, nutrition_info = ml_utils.handle_uploaded_image(image)
-            request.session['nutrition_info'] = nutrition_info
+            aggregated_nutrition, error = ml_utils.handle_uploaded_image(image)
+            
+            if error or not aggregated_nutrition or not aggregated_nutrition.get("items"):
+                # Corrected path below
+                return render(request, 'food_analyzer/log_meal.html', {'form': form, 'error': "Could not analyze image or find any food items."})
+
+            request.session['aggregated_nutrition'] = aggregated_nutrition
             return redirect('log_meal_confirm')
     else:
         form = ImageUploadForm()
+    # Corrected path below
     return render(request, 'food_analyzer/log_meal.html', {'form': form})
 
-# --- THIS IS THE UPDATED FUNCTION ---
 @login_required
 def log_meal_confirm_view(request):
-    # Get the nutrition data from the session that we stored after the AI prediction
-    session_nutrition = request.session.get('nutrition_info')
-    if not session_nutrition:
+    aggregated_nutrition = request.session.get('aggregated_nutrition')
+    if not aggregated_nutrition:
         return redirect('log_meal')
 
     if request.method == 'POST':
         profile = get_object_or_404(UserProfile, user=request.user)
+        item_count = int(request.POST.get('item_count', 0))
         
-        # Get the food name submitted by the user from the form
-        corrected_name = request.POST.get('food_name')
-        
-        # Check if the user changed the name
-        if corrected_name.lower() == session_nutrition['name'].lower():
-            # If the name is the same, use the nutrition data we already have
-            final_nutrition = session_nutrition
-        else:
-            # If the name is different, we MUST re-fetch nutrition data for the new name
-            final_nutrition = ml_utils.get_nutrition_data(corrected_name)
-        
-        # Log the meal with the final (potentially corrected) nutrition data
-        if final_nutrition:
-            DailyIntakeLog.objects.create(
-                user_profile=profile,
-                food_name=final_nutrition['name'],
-                calories=final_nutrition['calories'],
-                protein_g=final_nutrition['protein_g'],
-                carbs_g=final_nutrition['carbs_g'],
-                fat_g=final_nutrition['fat_g'],
-            )
-        
-        # Clean up the session and redirect to the dashboard
-        del request.session['nutrition_info']
-        return redirect('dashboard')
+        for i in range(item_count):
+            corrected_name = request.POST.get(f'food_name_{i}')
+            corrected_quantity = request.POST.get(f'quantity_{i}')
 
-    return render(request, 'food_analyzer/log_meal_confirm.html', {'nutrition': session_nutrition})
+            if corrected_name and corrected_quantity:
+                try:
+                    quantity = int(corrected_quantity)
+                    if quantity <= 0:
+                        continue
+                    
+                    final_nutrition = ml_utils.get_nutrition_data(corrected_name, quantity)
+                    
+                    if final_nutrition:
+                        DailyIntakeLog.objects.create(
+                            user_profile=profile,
+                            food_name=f"{quantity}x {corrected_name.title()}",
+                            calories=final_nutrition.get('calories', 0),
+                            protein_g=final_nutrition.get('protein_g', 0),
+                            carbs_g=final_nutrition.get('carbs_g', 0),
+                            fat_g=final_nutrition.get('fat_g', 0),
+                        )
+                except (ValueError, TypeError):
+                    print(f"Could not process item {i}: Invalid quantity '{corrected_quantity}'")
+                    continue
+
+        del request.session['aggregated_nutrition']
+        return redirect('dashboard')
+    
+    # Corrected path below
+    return render(request, 'food_analyzer/log_meal_confirm.html', {'aggregated_nutrition': aggregated_nutrition})
 
 @login_required
 def get_nutrition_data_view(request):
@@ -159,9 +152,9 @@ def get_nutrition_data_view(request):
     if not food_name:
         return JsonResponse({'error': 'Food name not provided'}, status=400)
     
-    nutrition_data = ml_utils.get_nutrition_data(food_name)
+    nutrition_data = ml_utils.get_nutrition_data(food_name) 
     
     if nutrition_data:
         return JsonResponse(nutrition_data)
     else:
-        return JsonResponse({'error': 'Nutrition data not found'}, status=404)
+        return JsonResponse({'error': 'Nutrition data not found for this item'}, status=404)
