@@ -2,6 +2,7 @@
 from .models import UserProfile, Meal
 import random
 
+# No changes needed for calculate_tdee
 def calculate_tdee(profile: UserProfile):
     if not all([profile.gender, profile.weight_kg, profile.height_cm, profile.age, profile.activity_level]):
         return 2000 # Return a default value if profile is incomplete
@@ -20,17 +21,39 @@ def calculate_tdee(profile: UserProfile):
     else:
         return tdee
 
+# In food_analyzer/planner_engine.py
+
 def generate_meal_plan(profile: UserProfile):
     target_calories = calculate_tdee(profile)
     
-    # Filter meals based on user allergies
-    user_allergies = [allergy.strip().lower() for allergy in profile.allergies.split(',') if allergy.strip()]
-    
+    # 1. Start with all meals
     all_meals = Meal.objects.all()
     
-    # Exclude meals containing allergens in their name or tags
+    # 2. **CRITICAL FIX**: Filter by the user's dietary preference FIRST
+    if profile.diet_type == 'veg':
+        # Only consider meals that have 'veg' in their tags
+        all_meals = all_meals.filter(tags__icontains='veg')
+    elif profile.diet_type == 'nonveg':
+        # Only consider meals that have 'non-veg' in their tags
+        all_meals = all_meals.filter(tags__icontains='non-veg')
+    # If diet_type is 'any', we use all meals from the initial query.
+
+    # 3. Filter the remaining meals by the user's goal
+    if profile.goal == 'lose':
+        goal_tag = 'weight-loss'
+    elif profile.goal == 'gain':
+        goal_tag = 'weight-gain'
+    else: # maintain
+        goal_tag = 'maintenance'
+        
+    # Now, filter the already diet-filtered list for the goal
+    goal_specific_meals = all_meals.filter(tags__icontains=goal_tag)
+    
+    # 4. Filter out any allergens from the final list
+    user_allergies = [allergy.strip().lower() for allergy in profile.allergies.split(',') if allergy.strip()]
+    
     safe_meals = []
-    for meal in all_meals:
+    for meal in goal_specific_meals:
         is_safe = True
         for allergy in user_allergies:
             if allergy in meal.name.lower() or allergy in meal.tags.lower():
@@ -39,17 +62,13 @@ def generate_meal_plan(profile: UserProfile):
         if is_safe:
             safe_meals.append(meal)
 
-    # Simple meal selection logic (can be made much smarter later)
+    # 5. Select random meals from the final, safe list
     plan = {
         'breakfast': random.choice([m for m in safe_meals if m.meal_type == 'breakfast']) if any(m.meal_type == 'breakfast' for m in safe_meals) else None,
         'lunch': random.choice([m for m in safe_meals if m.meal_type == 'lunch']) if any(m.meal_type == 'lunch' for m in safe_meals) else None,
         'dinner': random.choice([m for m in safe_meals if m.meal_type == 'dinner']) if any(m.meal_type == 'dinner' for m in safe_meals) else None,
     }
     
-    # Calculate total calories of the generated plan
-    total_calories = 0
-    for meal in plan.values():
-        if meal:
-            total_calories += meal.calories
+    total_calories = sum(meal.calories for meal in plan.values() if meal)
             
     return {'plan': plan, 'target_calories': target_calories, 'plan_calories': total_calories}

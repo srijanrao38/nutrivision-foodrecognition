@@ -3,13 +3,27 @@
 <div class="max-w-2xl mx-auto mt-10">
     <div class="bg-white p-8 rounded-lg shadow-lg">
         <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Your Profile</h2>
-        <p class="text-center text-gray-500 mb-6">This information is used to generate your personalized diet plan. The more accurate it is, the better your plan will be.</p>
+        <p class="text-center text-gray-500 mb-8">This information is used to generate your personalized diet plan. The more accurate it is, the better your plan will be.</p>
+        
         <form method="post">
             {% csrf_token %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{ form.as_p }}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                {% for field in form %}
+                    <div class="col-span-1 {% if field.name == 'allergies' %}md:col-span-2{% endif %}">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="mt-2 text-xs text-gray-500">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                            <div class="text-red-600 text-xs mt-1">
+                                {% for error in field.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
             </div>
-            <button type="submit" class="w-full mt-6 bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 font-semibold">Save Profile</button>
+            <button type="submit" class="w-full mt-8 bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 font-semibold">Save Profile</button>
         </form>
     </div>
 </div>
