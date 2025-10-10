@@ -1,6 +1,7 @@
 # food_analyzer/planner_engine.py
 from .models import UserProfile, Meal
 import random
+from django.db.models import Q
 
 # No changes needed for calculate_tdee
 def calculate_tdee(profile: UserProfile):
@@ -29,14 +30,14 @@ def generate_meal_plan(profile: UserProfile):
     # 1. Start with all meals
     all_meals = Meal.objects.all()
     
-    # 2. **CRITICAL FIX**: Filter by the user's dietary preference FIRST
+    # 2. **CRITICAL FIX**: Use a more specific filter for diet type
     if profile.diet_type == 'veg':
-        # Only consider meals that have 'veg' in their tags
-        all_meals = all_meals.filter(tags__icontains='veg')
+        # Find meals that contain 'veg' BUT EXCLUDE those that also contain 'non-veg'
+        all_meals = all_meals.filter(Q(tags__icontains='veg') & ~Q(tags__icontains='non-veg'))
     elif profile.diet_type == 'nonveg':
-        # Only consider meals that have 'non-veg' in their tags
+        # This filter remains the same and is correct
         all_meals = all_meals.filter(tags__icontains='non-veg')
-    # If diet_type is 'any', we use all meals from the initial query.
+    # If diet_type is 'any', we don't filter by diet.
 
     # 3. Filter the remaining meals by the user's goal
     if profile.goal == 'lose':
@@ -46,10 +47,9 @@ def generate_meal_plan(profile: UserProfile):
     else: # maintain
         goal_tag = 'maintenance'
         
-    # Now, filter the already diet-filtered list for the goal
     goal_specific_meals = all_meals.filter(tags__icontains=goal_tag)
     
-    # 4. Filter out any allergens from the final list
+    # 4. Filter out any allergens
     user_allergies = [allergy.strip().lower() for allergy in profile.allergies.split(',') if allergy.strip()]
     
     safe_meals = []
@@ -72,3 +72,4 @@ def generate_meal_plan(profile: UserProfile):
     total_calories = sum(meal.calories for meal in plan.values() if meal)
             
     return {'plan': plan, 'target_calories': target_calories, 'plan_calories': total_calories}
+
