@@ -125,27 +125,26 @@ def log_meal_confirm_view(request):
                     if quantity <= 0:
                         continue
                     
-                    final_nutrition = ml_utils.get_nutrition_data(corrected_name, quantity)
+                    # **THE FIX**: Get base nutrition for the corrected name
+                    base_nutrition = ml_utils.get_nutrition_data(corrected_name, 1)
                     
-                    if final_nutrition:
+                    if base_nutrition:
+                        # **THE FIX**: Do the multiplication before saving to the database
                         DailyIntakeLog.objects.create(
                             user_profile=profile,
                             food_name=f"{quantity}x {corrected_name.title()}",
-                            calories=final_nutrition.get('calories', 0),
-                            protein_g=final_nutrition.get('protein_g', 0),
-                            carbs_g=final_nutrition.get('carbs_g', 0),
-                            fat_g=final_nutrition.get('fat_g', 0),
+                            calories=base_nutrition.get('calories', 0) * quantity,
+                            protein_g=base_nutrition.get('protein_g', 0) * quantity,
+                            carbs_g=base_nutrition.get('carbs_g', 0) * quantity,
+                            fat_g=base_nutrition.get('fat_g', 0) * quantity,
                         )
                 except (ValueError, TypeError):
-                    print(f"Could not process item {i}: Invalid quantity '{corrected_quantity}'")
                     continue
 
         del request.session['aggregated_nutrition']
         return redirect('dashboard')
     
-    # Corrected path below
     return render(request, 'food_analyzer/log_meal_confirm.html', {'aggregated_nutrition': aggregated_nutrition})
-
 @login_required
 def get_nutrition_data_view(request):
     food_name = request.GET.get('food')
