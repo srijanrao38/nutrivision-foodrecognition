@@ -1,0 +1,23 @@
+USDA Nutrition Guidelines
+=========================
+
+Daily Caloric Intake:
+- Average active adult male: 2,500 calories/day
+- Average active adult female: 2,000 calories/day
+- Caloric surplus (weight gain): +500 calories/day
+- Caloric deficit (weight loss): -500 calories/day
+
+Macronutrient Ratios:
+- Carbohydrates: 45-65% of daily calories. Focus on complex carbohydrates like whole grains, brown rice, oats, and vegetables. Avoid simple sugars and refined grains.
+- Protein: 10-35% of daily calories (approx. 0.8g per kg of body weight, up to 1.6g-2.0g per kg for muscle gain). Good sources include chicken breast, fish, eggs, tofu, legumes, and Greek yogurt.
+- Fat: 20-35% of daily calories. Prioritize monounsaturated and polyunsaturated fats (olive oil, avocados, nuts, seeds) and limit saturated fats (<10% of total calories) and trans fats (0%).
+
+Fiber Guidelines:
+- Adult Men: 38 grams per day
+- Adult Women: 25 grams per day
+- Fiber aids in digestion, controls blood sugar spikes, and lowers cholesterol levels.
+
+Sodium and Cholesterol:
+- Sodium limit: less than 2,300 mg per day (1,500 mg for hypertensive individuals).
+- Dietary cholesterol: limit to less than 300 mg per day (less than 200 mg for hyperlipidemia).
+- High cholesterol individuals should avoid deep-fried foods, butter, processed meats (sausages, bacon), and fatty cuts of beef or pork.

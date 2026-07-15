@@ -199,16 +199,15 @@ def handle_uploaded_image(image_file):
     original_path = default_storage.path(path)
     full_path = original_path
     
-    # FIX: Convert problematic files (like .avif) to a reliable format (JPEG)
-    if not full_path.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
-        try:
-            img = Image.open(original_path)
-            converted_path = original_path.rsplit('.', 1)[0] + '_converted.jpg'
+    # Convert image to RGB JPEG to guarantee YOLOv8/OpenCV compatibility (handles AVIF, WebP, PNG, HEIC)
+    try:
+        with Image.open(original_path) as img:
+            converted_path = os.path.splitext(original_path)[0] + '_converted.jpg'
             img.convert('RGB').save(converted_path, 'JPEG') 
             full_path = converted_path
-            print(f"DEBUG: Converted file to JPG: {full_path}")
-        except Exception as e:
-            print(f"WARNING: Could not convert file to JPG: {e}. Attempting analysis with original file.")
+            print(f"DEBUG: Successfully converted image of format {img.format} to JPEG: {full_path}")
+    except Exception as e:
+        print(f"WARNING: Could not convert file to JPEG: {e}. Attempting analysis with original file.")
     
     aggregated_nutrition = {"items": [],"totals": {"calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}}
     error_message = None
@@ -231,19 +230,21 @@ def handle_uploaded_image(image_file):
             food_counts, gemini_error = analyze_with_gemini(full_path)
             
             if food_counts:
-                print(f"✅ model detected: {food_counts}")
+                print(f"✅ Gemini detected: {food_counts}")
+                error_message = None  # Clear previous errors if fallback succeeds
             elif gemini_error:
                 error_message = gemini_error
                 print(f"❌ Gemini Error: {gemini_error}")
 
         # 🔴 Tier 3: ORIGINAL B0 (Local Last Resort, if both failed)
         if not food_counts and b0_model:
-            print("🔴 Tier 3: Gemini failed. Falling back to ORIGINAL EfficientNetB0...")
+            print("🔴 Tier 3: Gemini/YOLO failed. Falling back to ORIGINAL EfficientNetB0...")
             predicted_name, b0_error = predict_single_food(full_path)
             
             if predicted_name and predicted_name != "Prediction Error":
                 food_counts = Counter({predicted_name: 1})
                 print(f"✅ B0 detected: {food_counts}")
+                error_message = None  # Clear previous errors if fallback succeeds
             elif b0_error:
                 error_message = b0_error
                 print(f"❌ B0 Error: {b0_error}")

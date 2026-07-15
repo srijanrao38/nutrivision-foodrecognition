@@ -1,0 +1,20 @@
+NIH Clinical Nutrition and Disease Guidelines
+=============================================
+
+Diabetes and HbA1c Management:
+- Fasting blood sugar target for adults with diabetes: 80-130 mg/dL. Post-meal target: less than 180 mg/dL.
+- HbA1c target for most adults with diabetes is less than 7.0%. Pre-diabetes is defined as HbA1c of 5.7% to 6.4%. Normal is below 5.7%.
+- Diabetic Diet Guidelines: Focus on low glycemic index (GI) foods. Avoid refined white flour, white rice, sugary carbonated beverages, candy, and fruit juices. Increase dietary fiber from legumes, whole grains, and leafy green vegetables. Limit carbohydrate intake and distribute it evenly throughout the day.
+
+Hypertension and Blood Pressure:
+- Normal Blood Pressure: less than 120/80 mmHg. Elevated BP: systolic 120-129 and diastolic <80. Hypertension Stage 1: systolic 130-139 or diastolic 80-89. Stage 2: systolic 140 or higher, or diastolic 90 or higher.
+- DASH (Dietary Approaches to Stop Hypertension) Diet: Eat foods rich in potassium, calcium, and magnesium. Reduce sodium to less than 1,500 mg per day. Limit red meats, sweets, and saturated fats. Increase intake of whole grains, poultry, fish, and nuts.
+
+Cardiovascular Disease and High Cholesterol:
+- Optimal Lipid Panel: Total Cholesterol <200 mg/dL, LDL Cholesterol <100 mg/dL (low-density lipoprotein, the "bad" cholesterol), HDL Cholesterol >40 mg/dL for men and >50 mg/dL for women (high-density lipoprotein, the "good" cholesterol).
+- High Cholesterol Diet Guidelines: Reduce saturated fats (<7% of daily calories) and eliminate trans-fats. Increase soluble fiber intake (oats, barley, beans, lentils, apples, pears) which binds to cholesterol in the digestive system and drags it out. Replace saturated fats with heart-healthy monounsaturated fats (extra virgin olive oil, nuts, avocados). Limit red meat and eat fatty fish (salmon, mackerel) rich in Omega-3 fatty acids twice a week.
+
+Vitamin and Mineral Deficiencies:
+- Vitamin D Deficiency (optimal level: >30 ng/mL, insufficient: 20-30 ng/mL, deficient: <20 ng/mL). Dietary sources: fortified milk, egg yolks, fatty fish, sunlight exposure.
+- Vitamin B12 Deficiency (optimal level: >200 pg/mL). Insufficiency is common in vegans and vegetarians since B12 is mainly in animal products. Dietary sources: fortified cereals, nutritional yeast, dairy, eggs, meat.
+- Iron Deficiency / Anemia (optimal hemoglobin for men: 13.8 to 17.2 g/dL, women: 12.1 to 15.1 g/dL). Dietary sources: lean meats, seafood, spinach, lentils, beans, iron-fortified cereals. Consume iron-rich plant foods with Vitamin C (citrus fruits) to enhance absorption.
